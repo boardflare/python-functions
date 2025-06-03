@@ -43,46 +43,20 @@ def categorize_module(mod_name):
 
 
 def main():
-    functions_dir = Path(__file__).resolve().parent.parent / "functions"
-    results = {}
+    functions_dir = Path(__file__).resolve().parent.parent / "notebooks"
+    all_imports = set()
     found_files = list(functions_dir.rglob("*.ipynb"))
-    processed = 0
     for nb_file in found_files:
-        # if processed >= 5:
-        #     break
-        # Read notebook and prepend actual external requirements to first code cell
-        nb = nbformat.read(str(nb_file), as_version=4)
-        first_cell = next((c for c in nb.cells if c.cell_type == 'code'), None)
-        if first_cell:
-            imports_set = get_imports_from_code(first_cell.source)
-            external_pkgs = [mod for mod in sorted(imports_set) if categorize_module(mod) == 'external']
-            if external_pkgs:
-                first_cell.source = (
-                    "# List required external packages, must be pyodide built-ins or pure python\n"
-                    f"requirements = {external_pkgs}\n\n"
-                    + first_cell.source
-                )
-                # only write back if there are external packages
-                with open(nb_file, 'w', encoding='utf-8') as f:
-                    nbformat.write(nb, f)
-                processed += 1
-
-        # Only analyze the first code cell for imports
         code_cells = extract_code_cells(nb_file)
-        first_code = code_cells[0] if code_cells else ''
-        imports_set = get_imports_from_code(first_code)
+        for code in code_cells:
+            imports_set = get_imports_from_code(code)
+            all_imports.update(imports_set)
 
-        categorized = {'built_in': [], 'external': [], 'unknown': []}
-        for mod in sorted(imports_set):
-            cat = categorize_module(mod)
-            categorized[cat].append(mod)
-
-        results[str(nb_file.relative_to(functions_dir))] = categorized
-
-    out_path = Path(__file__).resolve().parent / "imports_summary.json"
+    out_path = Path(__file__).resolve().parent / "requirements.txt"
     with open(out_path, 'w', encoding='utf-8') as f:
-        json.dump(results, f, indent=2)
-    print(f"Import summary written to {out_path}")
+        for pkg in sorted(all_imports):
+            f.write(f"{pkg}\n")
+    print(f"All imports written to {out_path}")
 
 
 if __name__ == "__main__":

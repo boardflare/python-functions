@@ -4,6 +4,8 @@ import re
 from pathlib import Path
 import ast
 import nbformat
+import shutil
+import subprocess
 
 def extract_code_cells(nb_path):
     with open(nb_path, 'r', encoding='utf-8') as f:
@@ -85,7 +87,47 @@ def get_function_metadata(nb_path):
         return None
 
 def main():
-    functions_dir = Path(__file__).resolve().parent.parent / "notebooks"
+    # Step 0: Copy all contents of notebooks directory into public/files directory
+    notebooks_dir = Path(__file__).resolve().parent.parent / "notebooks"
+    files_dir = Path(__file__).resolve().parent.parent / "public" / "files"
+    files_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Copying contents from {notebooks_dir} to {files_dir}...")
+    for item in notebooks_dir.iterdir():
+        dest = files_dir / item.name
+        if dest.exists():
+            if dest.is_dir():
+                shutil.rmtree(dest)
+            else:
+                dest.unlink()
+        if item.is_dir():
+            shutil.copytree(item, dest)
+        else:
+            shutil.copy2(item, dest)
+
+    # Step 1: Remove all .pytest_cache folders in files directory
+    print(f"Searching for .pytest_cache folders in: {files_dir.absolute()}")
+    for cache_dir in files_dir.rglob(".pytest_cache"):
+        if cache_dir.is_dir():
+            print(f"Deleting {cache_dir}...")
+            shutil.rmtree(cache_dir)
+
+    # Step 2: Delete the public folder if it exists
+    public_dir = Path(__file__).resolve().parent.parent / "public"
+    if public_dir.exists() and public_dir.is_dir():
+        print(f"Deleting {public_dir}...")
+        shutil.rmtree(public_dir)
+    else:
+        print(f"{public_dir} does not exist, skipping delete.")
+
+    # Step 3: Run jupyter lite build
+    print("Running 'jupyter lite build'...")
+    result = subprocess.run(["jupyter", "lite", "build"], capture_output=True, text=True)
+    print(result.stdout)
+    if result.returncode != 0:
+        print(result.stderr)
+        raise RuntimeError("jupyter lite build failed")
+
+    functions_dir = files_dir
     print(f"Searching for Jupyter notebooks in: {functions_dir.absolute()}")
     functions = []
     index = 1
@@ -127,7 +169,6 @@ def main():
                 metadata["folder"] = ''
             functions.append(metadata)
     functions.sort(key=lambda x: x["name"])
-    public_dir = Path(__file__).resolve().parent.parent / "public"
     public_dir.mkdir(exist_ok=True)
     output_path = public_dir / "example_functions.json"
     with open(output_path, 'w', encoding='utf-8') as f:

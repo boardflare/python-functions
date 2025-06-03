@@ -8,3 +8,7 @@ pandas
 scipy
 casadi
 msal
+matplotlib
+micropip
+numpy
+wordcloud

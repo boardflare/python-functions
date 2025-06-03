@@ -1,1 +1,4 @@
 nbformat
+jupyterlab
+jupyterlite-core
+jupyterlite-pyodide-kernel

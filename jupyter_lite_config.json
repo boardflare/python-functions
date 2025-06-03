@@ -1,0 +1,11 @@
+{
+    "LiteBuildConfig": {
+        "output_dir": "public",
+        "contents": [
+            "files"
+        ],
+        "apps": [
+            "lab"
+        ]
+    }
+}
