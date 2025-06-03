@@ -134,14 +134,6 @@ def main():
         except Exception as e:
             print(f"Error copying {item} to {dest}: {e}")
 
-    # Remove the last code cell from each notebook in files_dir
-    print(f"Removing last code cell from notebooks in: {files_dir.absolute()}")
-    for nb_file in files_dir.rglob("*.ipynb"):
-        try:
-            remove_last_code_cell(nb_file)
-        except Exception as e:
-            print(f"Error processing {nb_file}: {e}")
-
     # Step 1: Remove all .pytest_cache folders in files directory
     print(f"Searching for .pytest_cache folders in: {files_dir.absolute()}")
     for cache_dir in files_dir.rglob(".pytest_cache"):
@@ -156,14 +148,6 @@ def main():
         shutil.rmtree(public_dir)
     else:
         print(f"{public_dir} does not exist, skipping delete.")
-
-    # Step 3: Run jupyter lite build
-    print("Running 'jupyter lite build'...")
-    result = subprocess.run(["jupyter", "lite", "build"], capture_output=True, text=True)
-    print(result.stdout)
-    if result.returncode != 0:
-        print(result.stderr)
-        raise RuntimeError("jupyter lite build failed")
 
     functions_dir = files_dir
     print(f"Searching for Jupyter notebooks in: {functions_dir.absolute()}")
@@ -212,6 +196,22 @@ def main():
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(functions, f, indent=2)
     print(f"Generated {output_path} with {len(functions)} functions")
+
+    # Remove the last code cell from each notebook in files_dir (after JSON build)
+    print(f"Removing last code cell from notebooks in: {files_dir.absolute()}")
+    for nb_file in files_dir.rglob("*.ipynb"):
+        try:
+            remove_last_code_cell(nb_file)
+        except Exception as e:
+            print(f"Error processing {nb_file}: {e}")
+
+    # Step 3: Run jupyter lite build (now last)
+    print("Running 'jupyter lite build'...")
+    result = subprocess.run(["jupyter", "lite", "build"], capture_output=True, text=True)
+    print(result.stdout)
+    if result.returncode != 0:
+        print(result.stderr)
+        raise RuntimeError("jupyter lite build failed")
 
 if __name__ == "__main__":
     main()
