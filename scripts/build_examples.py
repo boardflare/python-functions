@@ -36,6 +36,7 @@ def extract_gradio_example(gradio_code):
                 for target in node.targets:
                     if isinstance(target, ast.Name) and target.id == "examples":
                         examples = ast.literal_eval(node.value)
+                        print(f"Extracted examples from gradio code cell: {examples}")
                         if isinstance(examples, list) and examples:
                             return examples[0]
                         elif isinstance(examples, tuple) and examples:
@@ -44,6 +45,7 @@ def extract_gradio_example(gradio_code):
                             return examples
     except Exception as e:
         print(f"Error extracting gradio example with AST: {e}")
+    print("No examples found in gradio code cell.")
     return None
 
 def build_test_case_from_example(example, arg_names, func_name=None):
