@@ -86,23 +86,61 @@ def get_function_metadata(nb_path):
         print(f"Error processing {nb_path}: {str(e)}")
         return None
 
+def remove_last_code_cell(nb_path):
+    """Remove the last code cell from a notebook file."""
+    try:
+        with open(nb_path, 'r', encoding='utf-8') as f:
+            nb = nbformat.read(f, as_version=4)
+        # Find the last code cell
+        for i in range(len(nb.cells) - 1, -1, -1):
+            if nb.cells[i].cell_type == 'code':
+                del nb.cells[i]
+                break
+        with open(nb_path, 'w', encoding='utf-8') as f:
+            nbformat.write(nb, f)
+    except Exception as e:
+        print(f"Error removing last code cell from {nb_path}: {e}")
+
 def main():
+    # Step -1: Delete the files folder if it exists
+    files_dir = Path(__file__).resolve().parent.parent / "files"
+    if files_dir.exists() and files_dir.is_dir():
+        print(f"Deleting {files_dir}...")
+        shutil.rmtree(files_dir)
+    else:
+        print(f"{files_dir} does not exist, skipping delete.")
+
     # Step 0: Copy all contents of notebooks directory into public/files directory
     notebooks_dir = Path(__file__).resolve().parent.parent / "notebooks"
-    files_dir = Path(__file__).resolve().parent.parent / "public" / "files"
     files_dir.mkdir(parents=True, exist_ok=True)
     print(f"Copying contents from {notebooks_dir} to {files_dir}...")
     for item in notebooks_dir.iterdir():
         dest = files_dir / item.name
-        if dest.exists():
-            if dest.is_dir():
-                shutil.rmtree(dest)
+        try:
+            print(f"Copying {item} to {dest}...")
+            if dest.exists():
+                if dest.is_dir():
+                    shutil.rmtree(dest)
+                else:
+                    dest.unlink()
+            if item.is_dir():
+                shutil.copytree(item, dest)
+            elif item.is_file():
+                shutil.copy2(item, dest)
             else:
-                dest.unlink()
-        if item.is_dir():
-            shutil.copytree(item, dest)
-        else:
-            shutil.copy2(item, dest)
+                print(f"Skipping non-file, non-directory: {item}")
+        except FileNotFoundError as e:
+            print(f"File not found, skipping: {item} ({e})")
+        except Exception as e:
+            print(f"Error copying {item} to {dest}: {e}")
+
+    # Remove the last code cell from each notebook in files_dir
+    print(f"Removing last code cell from notebooks in: {files_dir.absolute()}")
+    for nb_file in files_dir.rglob("*.ipynb"):
+        try:
+            remove_last_code_cell(nb_file)
+        except Exception as e:
+            print(f"Error processing {nb_file}: {e}")
 
     # Step 1: Remove all .pytest_cache folders in files directory
     print(f"Searching for .pytest_cache folders in: {files_dir.absolute()}")
