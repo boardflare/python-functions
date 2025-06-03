@@ -3,6 +3,7 @@ public/
 local/
 .pytest_cache/
 .msal_cache.json
+.jupyterlite.doit.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
