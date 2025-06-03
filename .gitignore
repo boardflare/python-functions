@@ -1,3 +1,8 @@
+public/
+local/
+.pytest_cache/
+.msal_cache.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

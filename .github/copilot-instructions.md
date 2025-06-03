@@ -1,0 +1,3 @@
+- All terminal commands should be in Windows PowerShell syntax.
+- When reading files with `read_file`, always read the first 1000 lines of the file.
+- After each edit, alway run all the notebook cells using the run notebook cell tool.

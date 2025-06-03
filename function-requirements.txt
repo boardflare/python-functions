@@ -1,0 +1,10 @@
+requests
+nltk
+textdistance
+pytest
+gradio
+smolagents
+pandas
+scipy
+casadi
+msal
