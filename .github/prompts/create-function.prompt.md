@@ -1,17 +1,17 @@
-# Function Notebook Creation Guidelines
+# Function Notebook Guidelines
 
 ## Overview
 
-You are creating a Jupyter notebook for a Python function used as a custom function in Excel. The notebook must serve as the single source of truth for documentation, implementation, testing, and Gradio demo. Carefully follow the instructions and coding guidelines below.
+These are guidelines for creating or editing the Jupyter notebook which contains a Python function to be used as a custom function in Excel. The notebook must serve as the single source of truth for documentation, implementation, testing, and Gradio demo. Carefully follow the instructions and coding guidelines below.
 
 ## Notebook Structure
 
-Load this [example notebook template](../../functions/financial/tax_rebalancer.ipynb) as a reference.
+Load this [example notebook template](../../notebooks/optimization/basin_hopping.ipynb) as a reference.
 The notebook should contain the following cells in this order:
 
 ### Documentation (Markdown Cell)
 - Title is the Excel function name in uppercase (e.g., `# TAX_EFFICIENT_REBALANCER`).
-- Provide an `## Overview` section with the function’s purpose and why it is useful.  This should include a detailed background of any algorithms used, if relevant, using equations where appropriate with inline latex math formatting only with $...$ delimiters..
+- Provide an `## Overview` section with the function’s purpose and why it is useful.  This should include a detailed background of any algorithms used, if relevant, using equations where appropriate with inline latex math formatting only with $...$ delimiters.
 - Include a `## Usage` section with a brief description of how to use the function in Excel and the function signature, where optional arguments are in square brackets. For example:
    ```excel
    =BLACK_SCHOLES(S, K, T, r, sigma, [option_type])
@@ -33,7 +33,6 @@ The notebook should contain the following cells in this order:
 | Price | float | The calculated option price | 4.1783 |
 | Error | string | Error message if calculation fails | "Error: Invalid input" |
 
-- Include a `## Notes` section with any limitations or important notes about the function.
 - Include a `## Examples` section with realistic, business-focused examples of how to use the function in Excel.
   - Provide at least two examples with sample input, function call, and expected output.
   - Where args or returns are lists, provide example values in a table format and reference ranges in the Excel formula examples.
@@ -44,13 +43,16 @@ The notebook should contain the following cells in this order:
 - Include a Google-style docstring with no examples.
 - Do not put imports in try except blocks.
 - For HTTP requests, use the `requests` library.
+- For API calls, use api_key as arguments, not environment variables.
 - Args and returns may be only list[list[]] or scalars, with types of float, bool, str, None.
 - Variable arguments (`*args`, `**kwargs`) are not allowed.
-- Function parameter names cannot contain numbers.
+- Function parameter names cannot contain numbers, use x_zero instead of x0, for example.
 - Do not add comments before the function definition.
-- Return error messages as strings instead of raising exceptions.
+- Return error messages as str or list[list[str]] depending on output type instead of raising exceptions.
+- Do not add any code for example usage.
 - If a function generates a plot, return it as a data URL.  For example:
    ```python
+   options = {"insert_only":True} # Add to top of the cell
    import matplotlib
    matplotlib.use('Agg')
    import matplotlib.pyplot as plt
@@ -67,12 +69,12 @@ The notebook should contain the following cells in this order:
    ```
 
 ### Unit Tests (Python Cell)
-- Use `ipytest` for in-notebook testing.
+- Use `ipytest` for in-notebook testing.  Install it with `%pip install -q ipytest` at the top of the cell.
 - Write separate test functions for each test case.
 - Cover both success and failure paths.
 - Use only generic assertions (type checks, non-emptiness, structure, approximate value checks).
-- Avoid content-specific assertions.
-- Do not mock external APIs; use live calls with placeholder/test keys.
+- Avoid content-specific assertions, especially with stochastic outputs (e.g. LLM, optimization).
+- Do not mock external APIs. 
 - Demo test cases must be realistic and business-focused.
 
 ### Gradio Demo (Python Cell)
@@ -80,32 +82,12 @@ The notebook should contain the following cells in this order:
 - Use the function defined in the implementation cell, do not wrap it in another function.
 - Examples shoud be the same as those in the documentation.
 - Set `flagging_mode='never'` to disable flagging.
+- For 2D list inputs or outputs, use `gr.DataFrame()` with `type="array"`.
+- Set default values for all inputs to match the first example in the documentation.
+- Add a description to the Gradio interface that matches the documentation.
+- Do not add a title to the Gradio interface.
 - Call `demo.launch()` at the end of the cell.
 
 ## Process
 
-After creating the notebook, follow these steps to ensure correctness and usability:
-
-1. **Run All Cells**
-   - Execute each cell in the notebook sequentially to ensure there are no errors and all outputs are as expected.
-
-2. **Validate Unit Tests**
-   - Confirm that all unit tests pass successfully. If any test fails, debug and update the implementation or tests as needed, then rerun the tests.
-
-3. **Review Documentation**
-   - Ensure the documentation cell is clear, complete, and matches the function implementation and test cases.
-
-4. **Final Review**
-   - Review the entire notebook for logical flow, formatting, and adherence to all coding guidelines.
-   - Make any necessary corrections to ensure the notebook is ready for use in Excel and as a standalone reference.
-
-## Other
-
-Guidelines:
-- Markdown cell: Use the same headings and content formatting as the example notebook. When there is a conflict between the formatting of the markdown file and the example notebook provided, use the formatting from the example notebook. Omit any content that does not fit the format provided in the example notebook.
-- Test cell: Use ipytest with separate test functions as shown in the notebook. Do not import the old test_cases.json or use parameterized tests.  Make sure to inject the token as shown in the example notebook.
-- Gradio cell: Examples should exactly match those provided in the markdown cell.  Use the function directly, do not wrap. Set default values for inputs to same as the first example.  Ensure all arguments in the examples and defaults have a value set - do not leave any as `None` or empty.
-- Do NOT add a code cell for example usage.
-- Do NOT add comments to the top of the code cells
-
-DO NOT use any tools that run terminal commands.
+After creating the notebook, use the run notebook cell tools to run all cells, validate unit tests, and review the documentation. If you make changes to the function implementation cell during debugging, ensure you update the documentation and gradio demo cells if needed.
