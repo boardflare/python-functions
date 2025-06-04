@@ -1,1 +1,0 @@
-Update to use ```math  ``` for block equations where appropriate for documentation cells in all the notebooks in #file:statistical. edit file if needed after reading it, then proceed to the next. no need to run notebook cell since just markdown. do not ask to proceed to next file
