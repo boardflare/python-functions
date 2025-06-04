@@ -6,8 +6,7 @@ These are guidelines for creating or editing the Jupyter notebook which contains
 
 ## Notebook Structure
 
-Load this [example notebook template](../../notebooks/optimization/basin_hopping.ipynb) as a reference.
-The notebook should contain the following cells in this order:
+Read lines 0 - 500 of this [example notebook template](../../notebooks/optimization/basin_hopping.ipynb) to use as a reference.  The notebook should contain the following cells in this order:
 
 ### Documentation (Markdown Cell)
 - Title is the Excel function name in uppercase (e.g., `# TAX_EFFICIENT_REBALANCER`).
@@ -37,7 +36,7 @@ The notebook should contain the following cells in this order:
 - Description columns should not include an example value.
 - Include a `## Examples` section with realistic, business-focused examples of how to use the function in Excel.
   - Provide at least two examples with sample input, function call, and expected output.
-  - Where args or returns are lists, provide example values in a table format and reference ranges in the Excel formula examples.
+  - Where args or returns are lists, provide each arg in a table format and reference ranges in the Excel formula examples.
   - Ensure examples are clear and demonstrate practical use cases.
   - Headings of examples should not include `Example 1`, `Example 2`, etc., but should be descriptive of the example content, such as `### Calculating Option Price` or `### Using with Different Volatilities`.
 - Use 2D list syntax `[[1, 2, 3], [4, 5, 6]]` for examples in arg and returns tables, not Excel array constants.
@@ -55,7 +54,7 @@ The notebook should contain the following cells in this order:
 - Do not add comments before the function definition.
 - Return error messages as str or list[list[str]] depending on output type instead of raising exceptions.
 - Do not add any code for example usage.
-- If a function generates a plot, return it as a data URL.  For example:
+- If a function generates a plot, return should only be a str with a data URL or error.  For example:
    ```python
    options = {"insert_only":True} # Add to top of the cell
    import matplotlib
@@ -79,7 +78,14 @@ The notebook should contain the following cells in this order:
    ```
 
 ### Unit Tests (Python Cell)
-- Use `ipytest` for in-notebook testing.  Install it with `%pip install -q ipytest` at the top of the cell.
+- Use `ipytest` for in-notebook testing as follows:
+   ```python
+   %pip install -q ipytest
+   import ipytest
+   ipytest.autoconfig()
+   ..test functions here..
+   ipytest.run()
+   ```
 - Write separate test functions for each test case.
 - Cover both success and failure paths.
 - Use only generic assertions (type checks, non-emptiness, structure, approximate value checks).
@@ -89,7 +95,7 @@ The notebook should contain the following cells in this order:
 
 ### Gradio Demo (Python Cell)
 - Use `gr.Interface()` for the demo.
-- Use the function defined in the implementation cell, do not wrap it in another function, except in the case of a plot, which should use a wrapper similar to the following:
+- Use the function defined, do not wrap it in another function, except in the case of a plot, which should use a wrapper similar to the following:
    ```python
    def render_html(data, chart_type, title, xlabel, ylabel):
     result = basic_chart(data, chart_type, title, xlabel, ylabel)
