@@ -38,6 +38,8 @@ The notebook should contain the following cells in this order:
   - Where args or returns are lists, provide example values in a table format and reference ranges in the Excel formula examples.
   - Ensure examples are clear and demonstrate practical use cases.
 
+- This markdown will be imported into an MDX file, so ensure JSX or HTML characters are only contained within code blocks or inline code formatting. E.g. Do not use Excel array literals `{2,3}` outside code blocks, use [[2,3]] instead.
+
 ### Function Implementation (Python Cell)
 - The function name must be a lowercase of the Excel function name used in the documentation.
 - Include a Google-style docstring with no examples.
@@ -79,7 +81,16 @@ The notebook should contain the following cells in this order:
 
 ### Gradio Demo (Python Cell)
 - Use `gr.Interface()` for the demo.
-- Use the function defined in the implementation cell, do not wrap it in another function.
+- Use the function defined in the implementation cell, do not wrap it in another function, except in the case of a plot, which should use a wrapper similar to the following:
+   ```python
+   def render_html(data, chart_type, title, xlabel, ylabel):
+    result = basic_chart(data, chart_type, title, xlabel, ylabel)
+    if isinstance(result, str) and result.startswith("data:image/png;base64,"):
+        # Return an HTML <img> tag with the data URL
+        return f'<img src="{result}" alt="Chart Image" style="max-width:100%;height:auto;" />'
+    return f'<div style="color:red;">{result}</div>'
+   ```
+- Plots should use `gr.HTML()` to display the chart image.
 - Examples shoud be the same as those in the documentation.
 - Set `flagging_mode='never'` to disable flagging.
 - For 2D list inputs or outputs, use `gr.DataFrame()` with `type="array"`.
