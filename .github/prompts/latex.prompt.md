@@ -1,0 +1,1 @@
+Update to use ```math``` for block equations where appropriate for documentation cells in all the notebooks in the notebooks directory.   Update the notebook after reading the first cell only, then proceed to the next notebook.

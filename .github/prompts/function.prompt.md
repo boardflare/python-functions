@@ -12,7 +12,7 @@ The notebook should contain the following cells in this order:
 ### Documentation (Markdown Cell)
 - Title is the Excel function name in uppercase (e.g., `# TAX_EFFICIENT_REBALANCER`).
 - Provide an `## Overview` section with the function’s purpose and why it is useful.  This should include a detailed background of any algorithms used, if relevant, using equations where appropriate.
-- Equations should be formatted with latex using `$...$` delimiters only, not `$$...$$`.
+- Equations should be formatted with latex using `$...$` delimiters for inline, and ```math ``` for equation blocks, not `$$...$$`.
 - Include a `## Usage` section with a brief description of how to use the function in Excel and the function signature, where optional arguments are in square brackets. For example:
    ```excel
    =BLACK_SCHOLES(S, K, T, r, sigma, [option_type])
