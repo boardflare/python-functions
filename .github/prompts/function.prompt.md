@@ -11,7 +11,8 @@ The notebook should contain the following cells in this order:
 
 ### Documentation (Markdown Cell)
 - Title is the Excel function name in uppercase (e.g., `# TAX_EFFICIENT_REBALANCER`).
-- Provide an `## Overview` section with the function’s purpose and why it is useful.  This should include a detailed background of any algorithms used, if relevant, using equations where appropriate with inline latex math formatting only with $...$ delimiters.
+- Provide an `## Overview` section with the function’s purpose and why it is useful.  This should include a detailed background of any algorithms used, if relevant, using equations where appropriate.
+- Equations should be formatted with latex using `$...$` delimiters only, not `$$...$$`.
 - Include a `## Usage` section with a brief description of how to use the function in Excel and the function signature, where optional arguments are in square brackets. For example:
    ```excel
    =BLACK_SCHOLES(S, K, T, r, sigma, [option_type])
@@ -33,11 +34,13 @@ The notebook should contain the following cells in this order:
 | Price | float | The calculated option price | 4.1783 |
 | Error | string | Error message if calculation fails | "Error: Invalid input" |
 
+- Description columns should not include an example value.
 - Include a `## Examples` section with realistic, business-focused examples of how to use the function in Excel.
   - Provide at least two examples with sample input, function call, and expected output.
   - Where args or returns are lists, provide example values in a table format and reference ranges in the Excel formula examples.
   - Ensure examples are clear and demonstrate practical use cases.
-
+  - Headings of examples should not include `Example 1`, `Example 2`, etc., but should be descriptive of the example content, such as `### Calculating Option Price` or `### Using with Different Volatilities`.
+- Use 2D list syntax `[[1, 2, 3], [4, 5, 6]]` for examples in arg and returns tables, not Excel array constants.
 - Ensure JSX or HTML characters outside code blocks are wrapped in backticks. E.g. `{2,3}` or `<=`
 
 ### Function Implementation (Python Cell)
@@ -68,6 +71,11 @@ The notebook should contain the following cells in this order:
       plt.close()
       img_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
       return f"data:image/png;base64,{img_b64}"
+   ```
+- If when the function is run, an error is thrown that an imported module is not found, install it using the following syntax:
+   ```python
+   import micropip
+   await micropip.install('textdistance')
    ```
 
 ### Unit Tests (Python Cell)
