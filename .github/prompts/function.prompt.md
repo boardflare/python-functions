@@ -38,7 +38,7 @@ The notebook should contain the following cells in this order:
   - Where args or returns are lists, provide example values in a table format and reference ranges in the Excel formula examples.
   - Ensure examples are clear and demonstrate practical use cases.
 
-- This markdown will be imported into an MDX file, so ensure JSX or HTML characters are only contained within code blocks or inline code formatting. E.g. Do not use Excel array literals `{2,3}` outside code blocks, use [[2,3]] instead.
+- Ensure JSX or HTML characters outside code blocks are wrapped in backticks. E.g. `{2,3}` or `<=`
 
 ### Function Implementation (Python Cell)
 - The function name must be a lowercase of the Excel function name used in the documentation.
