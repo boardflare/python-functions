@@ -1,3 +1,3 @@
 - All terminal commands should be in Windows PowerShell syntax.
 - When reading files with `read_file`, always read the first 1000 lines of the file.
-- After each edit to a *.ipynb file only, always run all the notebook cells in that file only using the run notebook cell tool.
+- After each edit to a notebook, always run all the notebook cells in that file using the run notebook cell tool by referencing all of the cells in the cellIds argument.
