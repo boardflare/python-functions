@@ -31,19 +31,22 @@ For the next item in the checklist, create a Jupyter notebook.  These notebooks 
 | Price | float | The calculated option price | 4.1783 |
 | Error | string | Error message if calculation fails | "Error: Invalid input" |
 
-- Description columns should not include an example value.
 - Include a `## Examples` section with realistic, business-focused examples of how to use the function in Excel.
   - Provide at least two examples with sample input, function call, and expected output.
   - Where args or returns are lists, provide each arg in a table format and reference ranges in the Excel formula examples.
   - Ensure examples are clear and demonstrate practical use cases.
   - Headings of examples should not include `Example 1`, `Example 2`, etc., but should be descriptive of the example content, such as `### Calculating Option Price` or `### Using with Different Volatilities`.
+
+- Include a `## References` section which repeats the references in the documentation and adds a link to the documentation for the module, e.g. https://fluids.readthedocs.io/fluids.atmosphere.html
+
 - Use 2D list syntax `[[1, 2, 3], [4, 5, 6]]` for examples in arg and returns tables, not Excel array constants.
 - Ensure JSX or HTML characters outside code blocks are wrapped in backticks. E.g. `{2,3}` or `<=`
 
 ### Function Implementation (Python Cell)
 - The function name must be a lowercase of the Excel function name used in the documentation.
 - Include a Google-style docstring with no examples.
-- Do not put imports in try except blocks or use an import alias.
+- Do not put imports in try except blocks or use an import alias. Always import classes directly, e.g. `from fluids.atmosphere import ATMOSPHERE_1976` (not `as` anything).
+- Do not add unused helper functions to any cell, including Gradio demo cells. Only include code that is required for the function, tests, or demo to work as specified.
 - For HTTP requests, use the `requests` library.
 - For API calls, use api_key as arguments, not environment variables.
 - Args may only be list[list[]] or scalars, with types of float, bool, str, None.
@@ -79,7 +82,6 @@ For the next item in the checklist, create a Jupyter notebook.  These notebooks 
 
 ### Gradio Demo (Python Cell)
 - Use `gr.Interface()` for the demo.
-- Use fn=main_function, do not create a gradio wrapper function.
 - Examples shoud be the same as those in the documentation.
 - Set `flagging_mode='never'` to disable flagging.
 - Use a separate output for each of the attributes returned by the function.
@@ -89,10 +91,13 @@ For the next item in the checklist, create a Jupyter notebook.  These notebooks 
 - Do not add a title to the Gradio interface.
 - Call `demo.launch()` at the end of the cell.
 
+## Gradio Input Conversion
+- Use `gr.Textbox(placeholder='Optional')` for optional numeric inputs in the Gradio interface. This allows users to leave the field blank, which will be passed as None.  For required numeric inputs, use `gr.Number()`.
+- In the converter function, check for None or blank values and only pass non-empty values to the main function, casting to float if provided.  2D list inputs should also be checked for empty lists and not passed to the main function.
+- This approach ensures that only explicitly provided values are passed, and the main function's default values are used for any omitted arguments.
+
 ## Step 3: Run and Validate
 
 After creating the notebook, use the run notebook cell tools to run all cells, validate unit tests, and review the documentation. If you make changes to the function implementation cell during debugging, ensure you update the documentation and gradio demo cells if needed.
-
-Review how well the notebook adheres to the design guidelines and provide a detailed report.
 
 When done, stop here and do not proceed to the next notebook until you have received confirmation from the user to proceed.

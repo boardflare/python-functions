@@ -1,5 +1,5 @@
 - [x] ATMOSPHERE_1976
-- [ ] ATMOSPHERE_NRLMSISE00
+- [x] ATMOSPHERE_NRLMSISE00
 - [ ] airmass
 - [ ] solar_position
 - [ ] solar_irradiation
