@@ -82,7 +82,8 @@ For the next item in the checklist, create a Jupyter notebook.  These notebooks 
 
 ### Gradio Demo (Python Cell)
 - Use `gr.Interface()` for the demo.
-- Examples shoud be the same as those in the documentation.
+- Examples shoud be the same as those in the documentation and assigned to an `examples` variable, which is then passed to the `gr.Interface()` constructor examples parameter.
+- Examples must always contain literals, not variables or functions.
 - Set `flagging_mode='never'` to disable flagging.
 - Use a separate output for each of the attributes returned by the function.
 - For 2D list inputs or outputs, use `gr.DataFrame()` with `type="array"`.
