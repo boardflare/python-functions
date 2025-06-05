@@ -36,8 +36,7 @@ For the next item in the checklist, create a Jupyter notebook.  These notebooks 
   - Where args or returns are lists, provide each arg in a table format and reference ranges in the Excel formula examples.
   - Ensure examples are clear and demonstrate practical use cases.
   - Headings of examples should not include `Example 1`, `Example 2`, etc., but should be descriptive of the example content, such as `### Calculating Option Price` or `### Using with Different Volatilities`.
-
-- Include a `## References` section which repeats the references in the documentation and adds a link to the documentation for the module, e.g. https://fluids.readthedocs.io/fluids.atmosphere.html
+- Include a `## Reference` section which contains the following text:  "See the `fluids` package [GitHub repository](https://github.com/CalebBell/fluids) and [documentation](https://fluids.readthedocs.io/index.html) for details.  We are grateful to the package authors for their work."
 
 - Use 2D list syntax `[[1, 2, 3], [4, 5, 6]]` for examples in arg and returns tables, not Excel array constants.
 - Ensure JSX or HTML characters outside code blocks are wrapped in backticks. E.g. `{2,3}` or `<=`
@@ -82,8 +81,19 @@ For the next item in the checklist, create a Jupyter notebook.  These notebooks 
 
 ### Gradio Demo (Python Cell)
 - Use `gr.Interface()` for the demo.
-- Examples shoud be the same as those in the documentation and assigned to an `examples` variable, which is then passed to the `gr.Interface()` constructor examples parameter.
-- Examples must always contain literals, not variables or functions.
+- You must assign the examples list to a variable named `examples` and then pass that variable to the `examples` parameter of `gr.Interface`. Do NOT pass the list directly.
+- Examples should be the same as those in the documentation, must always contain literals, not variables or functions.
+- Examples only need to contain arguments that are being passed to the function, not all arguments, as ommitted arguments will use the default values from the function signature.
+
+For example:
+```python
+examples = [
+    # Example 1: Calculating Atmospheric Properties at 1 km Elevation
+    ["1000", "45", "45", "150"],
+    # Example 2: Using Default Parameters
+    ["1000"],
+]
+```
 - Set `flagging_mode='never'` to disable flagging.
 - Use a separate output for each of the attributes returned by the function.
 - For 2D list inputs or outputs, use `gr.DataFrame()` with `type="array"`.
