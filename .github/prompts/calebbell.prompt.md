@@ -69,7 +69,7 @@ For the next item in the checklist, create a Jupyter notebook.  These notebooks 
    import ipytest
    ipytest.autoconfig()
    ..test functions here..
-   ipytest.run()
+   ipytest.run('-s')
    ```
 - Write separate test functions for each test case.
 - If the attached documentation includes example inputs and outputs, use those as test cases.
