@@ -83,15 +83,15 @@ For the next item in the checklist, create a Jupyter notebook.  These notebooks 
 - Use `gr.Interface()` for the demo.
 - You must assign the examples list to a variable named `examples` and then pass that variable to the `examples` parameter of `gr.Interface`. Do NOT pass the list directly.
 - Examples should be the same as those in the documentation, must always contain literals, not variables or functions.
-- Examples only need to contain arguments that are being passed to the function, not all arguments, as ommitted arguments will use the default values from the function signature.
+- Examples should set all optional arguments to the defaults of the function, unless otherwise specified.
 
 For example:
 ```python
 examples = [
     # Example 1: Calculating Atmospheric Properties at 1 km Elevation
     ["1000", "45", "45", "150"],
-    # Example 2: Using Default Parameters
-    ["1000"],
+    # Example 2: Calculating Atmospheric Properties at 2 km Elevation
+    ["2000", "45", "45", "150"],
 ]
 ```
 - Set `flagging_mode='never'` to disable flagging.
@@ -99,13 +99,9 @@ examples = [
 - For 2D list inputs or outputs, use `gr.DataFrame()` with `type="array"`.
 - Set default values for all inputs to match the first example in the documentation.
 - Add a description to the Gradio interface that matches the documentation.
+- Always assign `<function_name>` to the `fn` parameter of `gr.Interface()`, where `<function_name>` is the name of the function defined in the implementation cell.  Do not use a wrapper function.
 - Do not add a title to the Gradio interface.
 - Call `demo.launch()` at the end of the cell.
-
-## Gradio Input Conversion
-- Use `gr.Textbox(placeholder='Optional')` for optional numeric inputs in the Gradio interface. This allows users to leave the field blank, which will be passed as None.  For required numeric inputs, use `gr.Number()`.
-- In the converter function, check for None or blank values and only pass non-empty values to the main function, casting to float if provided.  2D list inputs should also be checked for empty lists and not passed to the main function.
-- This approach ensures that only explicitly provided values are passed, and the main function's default values are used for any omitted arguments.
 
 ## Step 3: Run and Validate
 
