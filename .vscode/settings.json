@@ -3,5 +3,5 @@
     "python.analysis.extraPaths": [
         "./test"
     ],
-    "python.terminal.activateEnvInCurrentTerminal": true
+    "python.terminal.activateEnvInCurrentTerminal": true,
 }

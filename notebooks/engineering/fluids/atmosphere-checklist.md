@@ -1,7 +1,0 @@
-- [x] ATMOSPHERE_1976
-- [x] ATMOSPHERE_NRLMSISE00
-- [x] airmass
-- [ ] solar_position
-- [ ] solar_irradiation
-- [ ] sunrise_sunset
-- [ ] earthsun_distance
