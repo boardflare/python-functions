@@ -29,12 +29,43 @@ For example:
    The function returns the Black-Scholes option price as a float.
 
 - Ensure JSX or HTML characters outside code blocks are wrapped in backticks. E.g. `{2,3}` or `<=`.
-- Include a `## Examples` section with a few example inputs and expected outputs, formatted as code blocks.  Use the following format:
-  ```excel
-  =BLACK_SCHOLES(100, 100, 1, 0.05, 0.2, "call")
-  ```
-  Expected output: `10.450583572185565`
-- If an example outputs a 2D list, format as a markdown table.
+- Include a `## Examples` section similar to the following format:
+
+    ## Examples
+
+    **Example 1: Resource Allocation (Minimize Cost)**
+
+    This example minimizes the cost function $3x_1 + 5x_2$ subject to two inequality constraints:
+    - $x_1 + 2x_2 \geq 8$
+    - $2x_1 + x_2 \geq 8$
+
+    In Excel:
+    ```excel
+    =LINEAR_PROG({3,5}, {-1,-2;-2,-1}, {-8;-8})
+    ```
+    Expected output:
+
+    | x1  | x2  | Optimal Value |
+    |-----|-----|---------------|
+    | 2.0 | 3.0 | 21.0          |
+
+    This means the minimum cost is 21.0 when $x_1 = 2.0$ and $x_2 = 3.0$.
+
+    **Example 2: Diet Problem (Maximize Protein)**
+
+    This example maximizes $x_1 + x_2$ (by minimizing $-x_1 - x_2$) subject to $x_1 + 2x_2 \leq 10$.
+
+    In Excel:
+    ```excel
+    =LINEAR_PROG({-1,-1}, {1,2}, {10})
+    ```
+    Expected output:
+
+    | x1   | x2   | Optimal Value |
+    |------|------|---------------|
+    | 10.0 | 0.0  | -10.0         |
+
+    This means the maximum sum $x_1 + x_2$ is 10.0 (since the optimal value is the negative of the sum), achieved when $x_1 = 10.0$ and $x_2 = 0.0$.
 
 ### 2. Function Implementation (Python Cell)
 - The function name must be a lowercase version of the Excel function name used in the documentation.
@@ -74,7 +105,7 @@ For example:
    ```
 
 ### 3. Unit Tests (Python Cell)
-- Add a `demo_cases` variable with a list of parameterized test cases which will also be used for Gradio examples, so need to be in the Gradio examples format.  It must include all optional arguments with realistic values.
+- Add a `demo_cases` variable with a list of parameterized test cases which will also be used for Gradio examples, so need to be in the Gradio examples format.  It must include all optional arguments and the last item in the array for each case should be the expected output.
 - Use `demo_cases` in a parameterized test function to validate the function output types using the exact `is_valid_type()` function provided in the example below.
 - Add additional test functions for invalid inputs.
 
@@ -83,34 +114,43 @@ For example:
 %pip install -q ipytest
 import ipytest
 ipytest.autoconfig()
+import pytest
 
 demo_cases = [
-    ["a * x + b", [[1], [2], [3]], [[2], [4], [6]], [[1, 1]], [[0, 0]], [[10, 10]], "trf"],
-    ["a * exp(b * x)", [[1], [2], [3]], [[2.7], [7.4], [20.1]], [[1, 1]], [[0, 0]], [[10, 10]], "trf"],
-    ["a * x + b", [[1], [2], [3]], [[2], [4], [6]], [[1, 1]], [[0, 0]], [[10, 10]], "trf"]
+    ["x**2 + 3*x + 2", [[-1000, 1000]], "bounded", [[-1.5, -0.25]]],
+    ["(x-5)**2 + 10", [[0, 10]], "bounded", [[5.0, 10.0]]],
+    ["x**2 + 3*x + 2", [[-10, 10]], "bounded", [[-1.5, -0.25]]]
 ]
 
-def is_valid_type(val):
-    if isinstance(val, (float, bool, str)):
-        return True
-    if isinstance(val, list):
-        return all(isinstance(row, list) and all(isinstance(x, (float, bool, str)) for x in row) for row in val)
+def approx_equal(a, b, rel=0.05, abs_tol=1e-4):
+    # Scalar float only
+    if isinstance(a, float) and isinstance(b, float):
+        return a == pytest.approx(b, rel=rel, abs=abs_tol)
+    # 2D list of floats only
+    if (
+        isinstance(a, list) and isinstance(b, list)
+        and all(isinstance(x, list) for x in a)
+        and all(isinstance(y, list) for y in b)
+    ):
+        return all(
+            all(isinstance(x, float) and isinstance(y, float) and x == pytest.approx(y, rel=rel, abs=abs_tol) for x, y in zip(row_a, row_b))
+            for row_a, row_b in zip(a, b)
+        )
     return False
 
-import pytest
-@pytest.mark.parametrize("model, xdata, ydata, p_zero, bounds_lower, bounds_upper, method", demo_cases)
-def test_demo_cases(model, xdata, ydata, p_zero, bounds_lower, bounds_upper, method):
-    result = least_squares(model, xdata, ydata, p_zero, bounds_lower, bounds_upper, method)
-    print(f"test_demo_cases output for {model}: {result}")
-    assert is_valid_type(result), f"Output type is not valid. Got: {type(result)} Value: {result}"
+@pytest.mark.parametrize("func_expr, bounds, method, expected", demo_cases)
+def test_demo_cases(func_expr, bounds, method, expected):
+    result = minimize_scalar(func_expr, bounds, method)
+    print(f"test_demo_cases output for {func_expr}: {result}")
+    assert approx_equal(result, expected, rel=0.05), f"Output {result} not within 5% of expected {expected}"
 
-def test_invalid_method():
-    result = least_squares("a * x + b", [[1], [2], [3]], [[2], [4], [6]], [[1, 1]], [[0, 0]], [[10, 10]], "invalid")
-    assert isinstance(result, str) and "method" in result
+def test_invalid_expression():
+    result = minimize_scalar("x***2 + 3x + 2", None, None)
+    assert isinstance(result, str) and ("error" in result.lower() or "must be" in result.lower())
 
-def test_param_mismatch():
-    result = least_squares("a * x + b", [[1], [2], [3]], [[2], [4], [6]], [[1]])
-    assert isinstance(result, str) and "initial guesses" in result
+def test_missing_x():
+    result = minimize_scalar("5 + 7", None, None)
+    assert isinstance(result, str) and ("function expression must contain" in result.lower())
 
 ipytest.run('-s')
 ```
@@ -119,44 +159,95 @@ ipytest.run('-s')
 - Use `gr.Interface()` to create a Gradio demo.
 - Set `flagging_mode='never'` and `fill_width=True`.
 - For 2D list inputs or outputs, use `gr.DataFrame()` with `type="array"`.  Use headers if the inputs or outputs have a consistent structure.
-- Add a description to the Gradio interface that matches the documentation, but no title. Include the sentence "This demo is provided as-is without any representation of accuracy." at the end of the description.
+- Add a description to the Gradio interface that matches the documentation (without latex markup), but no title. Include the sentence "This demo is provided as-is without any representation of accuracy." at the end of the description.
 - Set input values set to those of the first demo_case by referencing `demo_cases[0][0]`, etc..
 - Use the demo_cases variable defined in the test cell, do not redefine it in the Gradio demo cell.
+- Gradio wrapper functions should be used to handle dataframe inputs so that an empty dataframe is correctly passed as `None` to the function, and array elements are converted to floats where necessary.  If informative, the wrapper function should also generate a plot using `gr.HTML()` to display the chart image as a data URL.
 
 For example:
 ```python
 import gradio as gr
+import numpy as np
+import matplotlib.pyplot as plt
+import io
+import base64
+
+def gradio_minimize_scalar(func_expr, bounds, method):
+    print(f"gradio_minimize_scalar args: func_expr={func_expr}, bounds={bounds}, method={method}")
+    # Convert bounds to float if possible for both plotting and minimize_scalar
+    bounds_float = None
+    if bounds and isinstance(bounds, list) and len(bounds) == 1 and len(bounds[0]) == 2:
+        try:
+            min_b = float(bounds[0][0])
+            max_b = float(bounds[0][1])
+            bounds_float = [[min_b, max_b]]
+        except Exception:
+            bounds_float = None
+    else:
+        bounds_float = None
+
+    result = minimize_scalar(func_expr, bounds_float, method)
+    # Prepare plot
+    x_vals = np.linspace(-10, 10, 400)
+    if bounds_float:
+        x_vals = np.linspace(bounds_float[0][0], bounds_float[0][1], 400)
+    y_vals = []
+    for x in x_vals:
+        try:
+            y = eval(func_expr, {"x": x, "math": __import__('math')})
+        except Exception:
+            y = np.nan
+        y_vals.append(y)
+    plt.figure(figsize=(6, 4))
+    plt.plot(x_vals, y_vals, label="f(x)")
+    if isinstance(result, list) and len(result) > 0 and isinstance(result[0], list) and len(result[0]) == 2:
+        min_x, min_y = result[0]
+        plt.scatter([min_x], [min_y], color="red", label="Minimum")
+        plt.annotate(f"min=({min_x:.3g}, {min_y:.3g})", (min_x, min_y), textcoords="offset points", xytext=(0,10), ha='center', color='red')
+    plt.xlabel("x")
+    plt.ylabel("f(x)")
+    plt.title("Function Minimization")
+    plt.legend()
+    plt.tight_layout()
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png")
+    plt.close()
+    buf.seek(0)
+    img_base64 = base64.b64encode(buf.read()).decode("utf-8")
+    img_html = f'<img src="data:image/png;base64,{img_base64}" style="max-width:100%;height:auto;" />'
+    # Prepare result table or error
+    if isinstance(result, str):
+        result_html = f'<div style="color:red;font-weight:bold;">{result}</div>'
+    else:
+        result_html = f'<table border="1" style="border-collapse:collapse;"><tr><th>x</th><th>f(x)</th></tr>'
+        for row in result:
+            result_html += f'<tr><td>{row[0]:.6g}</td><td>{row[1]:.6g}</td></tr>'
+        result_html += '</table>'
+    return img_html + result_html
 
 demo = gr.Interface(
-    fn=psychrometrics, # Use function directly without wrapper
+    fn=gradio_minimize_scalar,
     inputs=[
-        gr.Dropdown(["wetbulb", "dewpoint", "humidityratio", "enthalpy"], label="Calculation Type", value=demo_cases[0][0]),
-        gr.Number(label="Dry Bulb Temperature (°C)", value=demo_cases[0][1]),
-        gr.Number(label="Relative Humidity (%)", value=demo_cases[0][2]),
-        gr.Number(label="Pressure (Pa)", value=demo_cases[0][3]),
+        gr.Textbox(label="Function Expression", value=demo_cases[0][0]),
+        gr.DataFrame(headers=["min", "max"], label="Bounds (optional)", row_count=1, col_count=2, type="array", value=demo_cases[0][1]),
+        gr.Dropdown(
+            choices=["brent", "bounded", "golden"],
+            label="Method (optional)",
+            value=demo_cases[0][2],
+            allow_custom_value=False,
+        ),
     ],
-    outputs=gr.Number(label="Result"),
-    examples=demo_cases, # Use demo_cases defined in the test cell
-    description="Calculate wet bulb, dew point, humidity ratio, or enthalpy using the psychrometrics function.",
+    outputs=gr.HTML(label="Plot and Result"),
+    examples=demo_cases,
+    description="Find the minimum of a scalar function f(x), where x is a real number. Provide the function as a string in terms of x, with optional bounds and method. This demo is provided as-is without any representation of accuracy.",
     flagging_mode="never",
     fill_width=True,
 )
-
 demo.launch()
 ```
 
-- Use the function defined without a wrapper, except in the case of a plot, which should use a wrapper similar to the following:
-   ```python
-   def render_html(data, chart_type, title, xlabel, ylabel):
-    result = basic_chart(data, chart_type, title, xlabel, ylabel)
-    if isinstance(result, str) and result.startswith("data:image/png;base64,"):
-        # Return an HTML <img> tag with the data URL
-        return f'<img src="{result}" alt="Chart Image" style="max-width:100%;height:auto;" />'
-    return f'<div style="color:red;">{result}</div>'
-   ```
-- Plots should use `gr.HTML()` output to display the chart image.
-
-
 ## Process
 
-After creating the notebook, use the run notebook cell tools to run all cells, validate unit tests, and review the documentation. If you make changes to the function implementation cell during debugging, ensure you update the documentation and gradio demo cells if needed.
+After creating the notebook, use the run the test notebook cell so that you can see the output, and either fix the function or update the expected result in demo_cases accordingly if the function appears to be working properly. 
+
+If you make changes to the function implementation cell during debugging, ensure you update the documentation and gradio demo cells as needed.
