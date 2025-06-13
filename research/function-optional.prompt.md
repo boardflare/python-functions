@@ -15,7 +15,7 @@ The notebook must follow this structure and style:
 
 ### 1. Documentation (Markdown Cell)
 - Title is the Excel function name in uppercase (e.g., `# TAX_EFFICIENT_REBALANCER`).
-- Provide an `## Overview` section with the function’s purpose, background, and any relevant equations (use LaTeX math with `$...$` for inline and triple-backtick math blocks for display equations).  Include a link to the relevant Python package github repo and documentation website.  Use fetch tool to confirm links are correct.  The following sentence should be included at the end of the overview: "This example function is provided as-is without any representation of accuracy."
+- Provide an `## Overview` section with the function’s purpose, background, and any relevant equations (use LaTeX math with `$...$` for inline and triple-backtick math blocks for display equations).  The following sentence should be included at the end of the overview: "This example function is provided as-is without any representation of accuracy."
 - Include a `## Usage` section with a brief description of how to use the function in Excel and the function signature, where optional arguments are in square brackets. 
 - List each argument in a bulleted list under Usage, with type and whether required/optional, description, and the default value if present.
 - The function return type and behavior should be described in a short paragraph at the end of Usage.
@@ -84,6 +84,8 @@ For example:
 - Parameter names cannot contain numbers, use x_zero instead of x0, for example.
 - Do not add comments before the function definition.
 - Return error messages as str or list[list[str]] depending on output type instead of raising exceptions.
+- Do not add any code for example usage.
+- Where the function is wrapping an existing library function, do not use an alias import, and minimize the amount of pre and post processing of inputs and outputs.
 - If a function generates a plot, return should only be a str with a data URL or error.  For example:
    ```python
    options = {"insert_only":True} # Add to top of the cell
@@ -161,13 +163,14 @@ ipytest.run('-s')
 ### 4. Gradio Demo (Python Cell)
 - Use `gr.Interface()` to create a Gradio demo.
 - Set `flagging_mode='never'` and `fill_width=True`.
-- For optional inputs, set `visible=False` in the input constructor.
-- For 2D list inputs or outputs, always use `gr.DataFrame()` with `type="array"`.  Use headers if the inputs or outputs have a consistent structure.
-- Do not add a title or description to the Gradio interface.
+- For 2D list inputs or outputs, use `gr.DataFrame()` with `type="array"`.  Use headers if the inputs or outputs have a consistent structure.
+- Add a description to the Gradio interface that matches the documentation (without latex markup), but no title. Include the sentence "This demo is provided as-is without any representation of accuracy." at the end of the description.
 - Set input values set to those of the first demo_case by referencing `demo_cases[0][0]`, etc..
-- Use the demo_cases variable defined in the test cell, do not redefine it in the Gradio demo cell.  The optional args and expected output in demo_cases will be ignored by Gradio, so use examples = demo_cases in the interface constructor.
-- If the function generates a plot, or the user requests a plot in the demo, use a Gradio wrapper function named gradio_function_name to handle plotting and any necessary input processing. The wrapper function should only be used if also generating a plot. Otherwise, pass the function directly to the Gradio interface.
-- Render plots using `gr.HTML()` with plot as a data URL.  Place the plot as the second output of the Gradio interface.
+- Use the demo_cases variable defined in the test cell, do not redefine it in the Gradio demo cell.  The last item in each demo case is the expected output, which will be ignored by Gradio, so there is no need to modify it.
+- A Gradio wrapper function named gradio_function_name should be used to handle dataframe inputs so that an empty dataframe is not passed to the function (thus allowing arg defaults to be used instead), and array elements are converted to floats where necessary.
+- The wrapper function must filter out arguments that are None, empty strings (""), empty lists ([]), or 2D lists/arrays where all elements are empty strings or None (such as `[["", ""]]`, etc.) for optional arguments before calling the actual function. Required arguments must always be passed. This ensures that only meaningful values are passed for optional parameters, and optional arguments can be omitted as intended.
+- If informative, the wrapper function should also generate a plot using `gr.HTML()` to display the chart image as a data URL.
+- Ensure there is a print statement in the wrapper function to log the arguments passed to it, which will help in debugging and understanding how the function is called from Gradio.
 - When the function has a parameter with a fixed number of enumerated choices, use `gr.Dropdown()` for the input, with `allow_custom_value=False` to prevent users from entering invalid values. The choices should be set to the first demo case value.
 
 For example:
@@ -178,8 +181,46 @@ import matplotlib.pyplot as plt
 import io
 import base64
 
-def gradio_minimize_scalar(func_expr):
-    result = minimize_scalar(func_expr)
+def is_empty_input(val):
+    """
+    Returns True if the input is considered empty for Gradio components.
+    Handles None, empty strings, empty lists, and 2D lists/arrays where all elements are empty, None, or NaN.
+    """
+    import numpy as np
+    if val is None or val == "" or val == []:
+        return True
+    try:
+        arr = np.array(val, dtype=object)
+    except Exception:
+        return False
+    if arr.size == 0:
+        return True
+    flat = arr.flatten()
+    if all((x is None or x == "" or (isinstance(x, float) and np.isnan(x))) for x in flat):
+        return True
+    return False
+
+def gradio_minimize_scalar(func_expr, bounds, method):
+    print(f"gradio_minimize_scalar args: func_expr={func_expr}, bounds={bounds}, method={method}")
+    # Only check is_empty_input for optional args
+    if is_empty_input(bounds):
+        bounds = None
+    if is_empty_input(method):
+        method = None
+    bounds_float = None
+    if bounds is not None and isinstance(bounds, list) and len(bounds) == 1 and len(bounds[0]) == 2:
+        try:
+            min_b = float(bounds[0][0])
+            max_b = float(bounds[0][1])
+            bounds_float = [[min_b, max_b]]
+        except Exception:
+            bounds_float = None
+    args_to_pass = {"func_expr": func_expr}  # required argument always passed
+    if bounds_float is not None:
+        args_to_pass["bounds"] = bounds_float
+    if method is not None:
+        args_to_pass["method"] = method
+    result = minimize_scalar(**args_to_pass)
     # Prepare result table (DataFrame)
     if isinstance(result, str):
         result_df = [[result, None]]
@@ -187,6 +228,8 @@ def gradio_minimize_scalar(func_expr):
         result_df = result
     # Prepare plot
     x_vals = np.linspace(-10, 10, 400)
+    if bounds_float:
+        x_vals = np.linspace(bounds_float[0][0], bounds_float[0][1], 400)
     y_vals = []
     for x in x_vals:
         try:
@@ -214,17 +257,15 @@ def gradio_minimize_scalar(func_expr):
     return result_df, img_html
 
 demo = gr.Interface(
-    fn=gradio_minimize_scalar,  # Use wrapper only if generating a plot
-    # visible=False for optional inputs,  # No title or description
+    fn=gradio_minimize_scalar,
     inputs=[
         gr.Textbox(label="Function Expression", value=demo_cases[0][0]),
-        gr.DataFrame(headers=["min", "max"], label="Bounds (optional)", row_count=1, col_count=2, type="array", value=demo_cases[0][1], visible=False),
+        gr.DataFrame(headers=["min", "max"], label="Bounds (optional)", row_count=1, col_count=2, type="array", value=demo_cases[0][1]),
         gr.Dropdown(
             choices=["brent", "bounded", "golden"],
             label="Method (optional)",
             value=demo_cases[0][2],
             allow_custom_value=False,
-            visible=False
         ),
     ],
     outputs=[
@@ -232,6 +273,7 @@ demo = gr.Interface(
         gr.HTML(label="Plot")
     ],
     examples=demo_cases,
+    description="Find the minimum of a scalar function f(x), where x is a real number. Provide the function as a string in terms of x, with optional bounds and method. This demo is provided as-is without any representation of accuracy.",
     flagging_mode="never",
     fill_width=True,
 )
@@ -241,7 +283,5 @@ demo.launch()
 ## Process
 
 After creating the notebook, use the run the test notebook cell so that you can see the output, and either fix the function or update the expected result in demo_cases accordingly if the function appears to be working properly. 
-
-Remove unused imports and functions when making changes. 
 
 If you make changes to the function implementation cell during debugging, ensure you update the documentation and gradio demo cells as needed.
