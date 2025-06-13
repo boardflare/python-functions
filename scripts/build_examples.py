@@ -48,6 +48,41 @@ def extract_gradio_example(gradio_code):
     print("No examples found in gradio code cell.")
     return None
 
+def extract_demo_cases(code):
+    """Extract demo_cases variable from code cell as a list of argument lists (drop expected values). Handles magics and non-Python lines."""
+    import re
+    import ast
+    try:
+        # Find the line that assigns to demo_cases
+        pattern = r"^\s*demo_cases\s*=\s*(.+)"
+        for line in code.splitlines():
+            if line.strip().startswith('%'):
+                continue  # skip magics
+            m = re.match(pattern, line)
+            if m:
+                rhs = m.group(1)
+                # If the assignment spans multiple lines, try to join lines until brackets are balanced
+                if rhs.count('[') > rhs.count(']') or rhs.count('(') > rhs.count(')'):
+                    lines = [rhs]
+                    open_brackets = rhs.count('[') - rhs.count(']')
+                    open_parens = rhs.count('(') - rhs.count(')')
+                    # Continue adding lines until brackets and parens are balanced
+                    for next_line in code.splitlines()[code.splitlines().index(line)+1:]:
+                        if next_line.strip().startswith('%'):
+                            continue
+                        lines.append(next_line)
+                        open_brackets += next_line.count('[') - next_line.count(']')
+                        open_parens += next_line.count('(') - next_line.count(')')
+                        if open_brackets <= 0 and open_parens <= 0:
+                            break
+                    rhs = '\n'.join(lines)
+                demo_cases = ast.literal_eval(rhs)
+                examples = [case[:-1] for case in demo_cases if isinstance(case, (list, tuple)) and len(case) > 1]
+                return examples
+    except Exception as e:
+        print(f"Error extracting demo_cases: {e}")
+    return None
+
 def build_test_case_from_example(example, arg_names, func_name=None):
     if example is None:
         return []
@@ -74,9 +109,35 @@ def get_function_metadata(nb_path):
         main_code = code_cells[0]
         func_name, docstring, arg_names = extract_function_info(main_code)
         description = docstring.split('\n')[0].strip() if docstring else ""
-        gradio_code = code_cells[2] if len(code_cells) > 2 else None
-        gradio_example = extract_gradio_example(gradio_code) if gradio_code else None
-        test_cases = build_test_case_from_example(gradio_example, arg_names, func_name)
+        # Search all code cells for demo_cases, but only parse if 'demo_cases' is present
+        demo_examples = None
+        for cell_code in code_cells:
+            if 'demo_cases' in cell_code:
+                demo_examples = extract_demo_cases(cell_code)
+                if demo_examples:
+                    break
+        if demo_examples:
+            # Use demo_cases for test cases
+            test_cases = []
+            for i, example in enumerate(demo_examples):
+                if isinstance(example, (list, tuple)):
+                    arguments = dict(zip(arg_names, example))
+                elif isinstance(example, dict):
+                    arguments = example
+                else:
+                    continue
+                test_case = {
+                    "id": f"test_{func_name or 'function'}_{i+1}",
+                    "description": f"Demo example {i+1}",
+                    "arguments": arguments,
+                    "demo": True
+                }
+                test_cases.append(test_case)
+        else:
+            # Fallback to gradio example extraction
+            gradio_code = code_cells[2] if len(code_cells) > 2 else None
+            gradio_example = extract_gradio_example(gradio_code) if gradio_code else None
+            test_cases = build_test_case_from_example(gradio_example, arg_names, func_name)
         return {
             "name": func_name or Path(nb_path).stem,
             "description": description,
