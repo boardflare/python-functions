@@ -117,18 +117,19 @@ def get_function_metadata(nb_path):
                 if demo_examples:
                     break
         if demo_examples:
-            # Use demo_cases for test cases
+            # Use only the first demo_case for test cases
             test_cases = []
-            for i, example in enumerate(demo_examples):
+            example = demo_examples[0] if len(demo_examples) > 0 else None
+            if example is not None:
                 if isinstance(example, (list, tuple)):
                     arguments = dict(zip(arg_names, example))
                 elif isinstance(example, dict):
                     arguments = example
                 else:
-                    continue
+                    arguments = {}
                 test_case = {
-                    "id": f"test_{func_name or 'function'}_{i+1}",
-                    "description": f"Demo example {i+1}",
+                    "id": f"test_{func_name or 'function'}_1",
+                    "description": "Demo example 1",
                     "arguments": arguments,
                     "demo": True
                 }
