@@ -7,14 +7,20 @@ def process_notebook(nb_path):
     if len(code_cells) < 2:
         print(f"{nb_path}: Notebook has fewer than 2 code cells.")
         return False
+    # Remove %pip install -q ipytest from 2nd code cell if present
     cell = code_cells[1]
     lines = cell['source'].splitlines()
+    filtered_lines = [l for l in lines if l.strip() != '%pip install -q ipytest']
+    if len(filtered_lines) != len(lines):
+        cell['source'] = '\n'.join(filtered_lines)
+        print(f"Removed '%pip install -q ipytest' from 2nd code cell in {nb_path}")
+    # Update 2nd code cell for ipytest install
     try:
-        idx = next(i for i, line in enumerate(lines) if 'import ipytest' in line)
+        idx = next(i for i, line in enumerate(filtered_lines) if 'import ipytest' in line)
     except StopIteration:
         print(f"{nb_path}: 'import ipytest' not found in 2nd code cell.")
         return False
-    new_lines = lines[idx:]
+    new_lines = filtered_lines[idx:]
     if not new_lines or not new_lines[0].startswith('%pip install'):
         new_lines.insert(0, '%pip install -q ipytest')
     cell['source'] = '\n'.join(new_lines)

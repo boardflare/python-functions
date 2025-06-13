@@ -165,6 +165,15 @@ def remove_last_code_cell(nb_path):
     except Exception as e:
         print(f"Error removing last code cell from {nb_path}: {e}")
 
+def copy_first_two_cells(src_path, dest_path):
+    """Copy only the first two cells of a notebook from src_path to dest_path."""
+    with open(src_path, 'r', encoding='utf-8') as f:
+        nb = nbformat.read(f, as_version=4)
+    # Only keep the first two cells
+    nb.cells = nb.cells[:2]
+    with open(dest_path, 'w', encoding='utf-8') as f:
+        nbformat.write(nb, f)
+
 def main():
     # Step -1: Delete the files folder if it exists
     files_dir = Path(__file__).resolve().parent.parent / "files"
@@ -174,25 +183,23 @@ def main():
     else:
         print(f"{files_dir} does not exist, skipping delete.")
 
-    # Step 0: Copy all contents of notebooks directory into public/files directory
+    # Step 0: Copy only the first two cells of each notebook in notebooks directory into files directory
     notebooks_dir = Path(__file__).resolve().parent.parent / "notebooks"
     files_dir.mkdir(parents=True, exist_ok=True)
-    print(f"Copying contents from {notebooks_dir} to {files_dir}...")
+    print(f"Copying first two cells from {notebooks_dir} to {files_dir}...")
     for item in notebooks_dir.iterdir():
         dest = files_dir / item.name
         try:
-            print(f"Copying {item} to {dest}...")
-            if dest.exists():
-                if dest.is_dir():
-                    shutil.rmtree(dest)
-                else:
-                    dest.unlink()
             if item.is_dir():
                 shutil.copytree(item, dest)
-            elif item.is_file():
-                shutil.copy2(item, dest)
+                # For each notebook in the subdirectory, keep only the first two cells
+                for nb_file in dest.rglob("*.ipynb"):
+                    src_nb_file = item / nb_file.relative_to(dest)
+                    copy_first_two_cells(src_nb_file, nb_file)
+            elif item.is_file() and item.suffix == ".ipynb":
+                copy_first_two_cells(item, dest)
             else:
-                print(f"Skipping non-file, non-directory: {item}")
+                print(f"Skipping non-notebook: {item}")
         except FileNotFoundError as e:
             print(f"File not found, skipping: {item} ({e})")
         except Exception as e:
